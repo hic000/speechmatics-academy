@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: use-cases/09-flutter-mobile-transcription
+        working-directory: use-cases/09-flutter-mobile-transcription/flutter
 
     steps:
       - name: Repoyu çek
