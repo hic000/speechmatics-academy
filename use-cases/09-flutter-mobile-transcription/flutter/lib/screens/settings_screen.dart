@@ -6,6 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
 import '../data/api_keys.dart';
+import '../data/translate_provider.dart';
 import '../data/config_mapper.dart';
 import '../models/classic_lang_catalog.dart';
 import '../models/lang_catalog.dart';
@@ -29,12 +30,20 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final _apiKeys = ApiKeys();
   final _smKeyController = TextEditingController();
-  final _googleKeyController = TextEditingController();
   bool _smSaved = false;
-  bool _googleSaved = false;
-  // Saved keys collapse to a compact row; these expand them for replacement.
   bool _smEditing = false;
-  bool _googleEditing = false;
+
+  // One controller/flag pair per translation provider — only the one
+  // matching s.translateProvider is shown at a time.
+  final Map<TranslateProvider, TextEditingController> _providerKeyControllers = {
+    for (final p in TranslateProvider.values) p: TextEditingController(),
+  };
+  final Map<TranslateProvider, bool> _providerKeySaved = {
+    for (final p in TranslateProvider.values) p: false,
+  };
+  final Map<TranslateProvider, bool> _providerKeyEditing = {
+    for (final p in TranslateProvider.values) p: false,
+  };
 
   // Seeded once so per-keystroke store writes don't reset the cursor.
   late final TextEditingController _dictController;
@@ -49,15 +58,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _apiKeys.hasStoredSpeechmatics().then((v) {
       if (mounted) setState(() => _smSaved = v);
     });
-    _apiKeys.hasStoredGoogle().then((v) {
-      if (mounted) setState(() => _googleSaved = v);
-    });
+    for (final p in TranslateProvider.values) {
+      _apiKeys.hasStoredTranslateKey(p).then((v) {
+        if (mounted) setState(() => _providerKeySaved[p] = v);
+      });
+    }
   }
 
   @override
   void dispose() {
     _smKeyController.dispose();
-    _googleKeyController.dispose();
+    for (final c in _providerKeyControllers.values) {
+      c.dispose();
     _dictController.dispose();
     _topicsController.dispose();
     super.dispose();
@@ -153,13 +165,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const SizedBox(height: 24),
         _toggleSection(
           title: 'TRANSLATION',
-          label: 'Enable translation (Google)',
+          label:
+              'Enable translation (${TranslateProvider.fromId(s.translateProvider).label})',
           value: s.translation,
           onChanged: s.setTranslation,
-          sub: _rowPicker(
-            title: 'Translate to',
-            value: s.targetLanguageName,
-            onTap: () => _pickLanguage(context, (l) => s.setTarget(l.code, l.name)),
+          sub: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _rowPicker(
+                title: 'Provider',
+                value: TranslateProvider.fromId(s.translateProvider).label,
+                onTap: () => _pickProvider(context, s),
+              ),
+              const SizedBox(height: 12),
+              _rowPicker(
+                title: 'Translate to',
+                value: s.targetLanguageName,
+                onTap: () => _pickLanguage(context, (l) => s.setTarget(l.code, l.name)),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 24),
@@ -983,27 +1007,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              _keyField(
-                label: 'Google Translate API key',
-                controller: _googleKeyController,
-                saved: _googleSaved,
-                editing: _googleEditing,
-                onEdit: () => setState(() => _googleEditing = true),
-                onCancel: () => setState(() {
-                  _googleEditing = false;
-                  _googleKeyController.clear();
-                }),
-                onSave: (v) async {
-                  await _apiKeys.setGoogle(v);
-                  if (mounted) {
-                    setState(() {
-                      _googleSaved = true;
-                      _googleEditing = false;
-                    });
-                  }
-                  _googleKeyController.clear();
-                },
-              ),
+              Builder(builder: (_) {
+                final provider = TranslateProvider.fromId(s.translateProvider);
+                return _keyField(
+                  label: provider.keyFieldLabel,
+                  controller: _providerKeyControllers[provider]!,
+                  saved: _providerKeySaved[provider]!,
+                  editing: _providerKeyEditing[provider]!,
+                  onEdit: () => setState(() => _providerKeyEditing[provider] = true),
+                  onCancel: () => setState(() {
+                    _providerKeyEditing[provider] = false;
+                    _providerKeyControllers[provider]!.clear();
+                  }),
+                  onSave: (v) async {
+                    await _apiKeys.setTranslateKey(provider, v);
+                    if (mounted) {
+                      setState(() {
+                        _providerKeySaved[provider] = true;
+                        _providerKeyEditing[provider] = false;
+                      });
+                    }
+                    _providerKeyControllers[provider]!.clear();
+                  },
+                );
+              }),
               const SizedBox(height: 8),
               Text('Keys are stored securely on this device.',
                   style: AppType.body(size: 12, color: AppColors.tertiary)),
@@ -1208,6 +1235,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
     if (picked != null) onPicked(picked);
+  }
+
+  Future<void> _pickProvider(BuildContext context, SettingsStore s) async {
+    final picked = await showModalBottomSheet<TranslateProvider>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text('Choose a translation provider', style: AppType.headline(size: 18)),
+            ),
+            for (final p in TranslateProvider.values)
+              ListTile(
+                title: Text(p.label, style: AppType.body(size: 16)),
+                trailing: p.id == s.translateProvider
+                    ? Icon(Symbols.check, color: AppColors.primary)
+                    : null,
+                onTap: () => Navigator.pop(ctx, p),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked != null) s.setTranslateProvider(picked.id);
   }
 
   // ---------- Real-Time ----------
@@ -1443,7 +1499,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Expanded(
               child: Text(
                   s.translation
-                      ? 'Google Translate → ${s.targetLanguageName} (post-transcription)'
+                      ? '${TranslateProvider.fromId(s.translateProvider).label} → ${s.targetLanguageName} (post-transcription)'
                       : 'Translation off',
                   style: AppType.body(size: 12, color: const Color(0xFFA3CDDC))),
             ),
