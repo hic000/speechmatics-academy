@@ -3,19 +3,13 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../app_config.dart';
-
-class TranslateException implements Exception {
-  TranslateException(this.message);
-  final String message;
-  @override
-  String toString() => message;
-}
+import 'translate_client.dart';
 
 /// Google Cloud Translation v2 (Basic) client. Translates a list of strings,
 /// batching to stay under the per-request limits (<=128 strings / ~28k chars).
 /// Source language is omitted by default (auto-detect) since transcripts are
 /// multilingual.
-class GoogleTranslateClient {
+class GoogleTranslateClient implements TranslateClient {
   GoogleTranslateClient({required this.apiKey, http.Client? client})
       : _http = client ?? http.Client();
 
@@ -25,6 +19,7 @@ class GoogleTranslateClient {
   static const _maxStrings = 128;
   static const _maxChars = 28000;
 
+  @override
   Future<List<String>> translate({
     required List<String> q,
     required String target,
@@ -89,5 +84,6 @@ class GoogleTranslateClient {
       .replaceAll('&lt;', '<')
       .replaceAll('&gt;', '>');
 
+  @override
   void dispose() => _http.close();
 }
