@@ -21,6 +21,7 @@ class JobConfig {
     this.customDictEnabled = false,
     this.customDictText = '',
     this.translationEnabled = true,
+    this.translateProvider = 'google',
     this.targetLanguageCode = 'en',
     this.targetLanguageName = 'English',
     this.audioFiltering = false,
@@ -60,7 +61,8 @@ class JobConfig {
   final bool customDictEnabled;
   final String customDictText;
   final bool translationEnabled;
-  final String targetLanguageCode; // for Google Translate, e.g. 'en'
+  final String translateProvider; // 'google' | 'claude' | 'openai' | 'deepseek'
+  final String targetLanguageCode; // e.g. 'en'
   final String targetLanguageName; // display, e.g. 'English'
   final bool audioFiltering;
   final double volumeThreshold;
