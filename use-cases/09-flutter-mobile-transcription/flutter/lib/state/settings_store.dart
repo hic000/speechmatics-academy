@@ -41,6 +41,7 @@ class SettingsStore extends ChangeNotifier {
   bool customDict = true;
   String customDictText = '';
   bool translation = true;
+  String translateProvider = 'google'; // 'google' | 'claude' | 'openai' | 'deepseek'
   String targetLanguageCode = 'en';
   String targetLanguageName = 'English';
   // OFF by default — and keep the threshold low: values like 50 filter out
