@@ -17,7 +17,6 @@ class AppConfig {
   static const googleTranslateUrl =
       'https://translation.googleapis.com/language/translate/v2';
 
-  // Optional build-time keys: flutter run --dart-define=SM_API_KEY=... --dart-define=GOOGLE_API_KEY=...
+  // Optional build-time key: flutter run --dart-define=SM_API_KEY=...
   static const smKeyFromDefine = String.fromEnvironment('SM_API_KEY');
-  static const googleKeyFromDefine = String.fromEnvironment('GOOGLE_API_KEY');
 }
