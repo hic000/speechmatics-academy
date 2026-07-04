@@ -70,6 +70,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _smKeyController.dispose();
     for (final c in _providerKeyControllers.values) {
       c.dispose();
+    }
     _dictController.dispose();
     _topicsController.dispose();
     super.dispose();
