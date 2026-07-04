@@ -4,7 +4,7 @@ import '../data/api_keys.dart';
 import '../data/audio_store.dart';
 import '../data/config_mapper.dart';
 import '../data/dto/job_status.dart';
-import '../data/google_translate_client.dart';
+import '../data/translate_provider.dart';
 import '../data/speechmatics_client.dart';
 import '../data/transcript_parser.dart';
 import '../models/history_item.dart';
@@ -112,15 +112,16 @@ class JobController extends ChangeNotifier {
         throw 'No speech was detected in the audio.';
       }
 
-      // ---- Translation (Google) ----
+      // ---- Translation (provider chosen in Settings) ----
       String? translationText;
       if (config.translationEnabled) {
-        final gKey = await apiKeys.google();
-        if (gKey == null) {
+        final provider = TranslateProvider.fromId(config.translateProvider);
+        final pKey = await apiKeys.translateKey(provider);
+        if (pKey == null) {
           translationSkipped = true;
         } else {
           _set(JobPhase.translating);
-          final translator = GoogleTranslateClient(apiKey: gKey);
+          final translator = buildTranslateClient(provider, pKey);
           try {
             final translated = await translator.translate(
               q: parsed.segmentTexts,
