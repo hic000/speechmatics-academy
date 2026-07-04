@@ -99,8 +99,9 @@ class SettingsStore extends ChangeNotifier {
       customDict = m['customDict'] ?? customDict;
       customDictText = m['customDictText'] ?? customDictText;
       translation = m['translation'] ?? translation;
+      translation = m['translation'] ?? translation;
+      translateProvider = m['translateProvider'] ?? translateProvider;
       targetLanguageCode = m['targetLanguageCode'] ?? targetLanguageCode;
-      targetLanguageName = m['targetLanguageName'] ?? targetLanguageName;
       audioFiltering = m['audioFiltering'] ?? audioFiltering;
       volume = (m['volume'] as num?)?.toDouble() ?? volume;
       punctuation = m['punctuation'] ?? punctuation;
@@ -157,6 +158,7 @@ class SettingsStore extends ChangeNotifier {
         'customDict': customDict,
         'customDictText': customDictText,
         'translation': translation,
+        'translateProvider': translateProvider,
         'targetLanguageCode': targetLanguageCode,
         'targetLanguageName': targetLanguageName,
         'audioFiltering': audioFiltering,
@@ -199,6 +201,7 @@ class SettingsStore extends ChangeNotifier {
   void setCustomDict(bool v) => _commit(() => customDict = v);
   void setCustomDictText(String v) => _commit(() => customDictText = v);
   void setTranslation(bool v) => _commit(() => translation = v);
+  void setTranslateProvider(String v) => _commit(() => translateProvider = v);
   void setTarget(String code, String name) => _commit(() {
         targetLanguageCode = code;
         targetLanguageName = name;
@@ -240,6 +243,7 @@ class SettingsStore extends ChangeNotifier {
         customDictEnabled: customDict,
         customDictText: customDictText,
         translationEnabled: translation,
+        translateProvider: translateProvider,
         targetLanguageCode: targetLanguageCode,
         targetLanguageName: targetLanguageName,
         audioFiltering: audioFiltering,
